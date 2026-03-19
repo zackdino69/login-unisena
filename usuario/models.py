@@ -15,6 +15,7 @@ class Usuario(models.Model):
     TIPOS_IDENTIFICACION = [
         ('CC', 'Cédula de ciudadanía'),
         ('TI', 'Tarjeta de identidad'),
+        ('CE', 'Cedula de extranjeria'),
     ]
 
     rol = models.ForeignKey(Rol, on_delete=models.CASCADE)
@@ -30,7 +31,7 @@ class Usuario(models.Model):
         max_length=2,
         choices=TIPOS_IDENTIFICACION
     )    
-    num_identificacion = models.PositiveBigIntegerField(unique=True)
+    num_identificacion = models.CharField(max_length=20, unique=True)    
     password = models.CharField(max_length=255)
     
     def save(self, *args, **kwargs):

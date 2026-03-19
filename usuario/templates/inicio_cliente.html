@@ -50,14 +50,68 @@
         padding: 30px 0;
       }
       .logo-sena {
-        width: 60px;   /* tamaño pequeño y elegante */
+        width: 60px; /* tamaño pequeño y elegante */
         height: auto;
-    }
+      }
 
       .logo-text {
-       color: #125f58;  /* verde tipo Bootstrap */
-       font-weight: bold;
-       font-size: 1.4rem;
+        color: #125f58; /* verde tipo Bootstrap */
+        font-weight: bold;
+        font-size: 1.4rem;
+      }
+
+      .btn-success {
+        background-color: #125f58;
+        border: none;
+      }
+      .navbar {
+        position: relative;
+      }
+
+      .navbar-center {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+
+      .navbar-nav {
+        display: flex;
+        gap: 20px;
+      }
+      .nav-link {
+        position: relative;
+        transition: 0.3s;
+      }
+
+      .nav-link:hover {
+        color: #125f58;
+        transform: translateY(-2px);
+      }
+
+      /* línea animada abajo */
+      .nav-link::after {
+        content: "";
+        position: absolute;
+        width: 0%;
+        height: 2px;
+        left: 0;
+        bottom: -5px;
+        background-color: #125f58;
+        transition: 0.3s;
+      }
+
+      .nav-link:hover::after {
+        width: 100%;
+      }
+      .card-product {
+        border: none;
+        border-radius: 15px;
+        transition: all 0.4s ease;
+      }
+
+      .card-product:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0px 15px 30px rgb(    #263521);
       }
     </style>
   </head>
@@ -71,9 +125,8 @@
           <span class="logo-text">UNISENA</span>
         </div>
 
-        <div class="collapse navbar-collapse justify-content-center">
+        <div class="navbar-center">
           <ul class="navbar-nav">
-            <li class="nav-item"><a class="nav-link" href="#">Programas</a></li>
             <li class="nav-item"><a class="nav-link" href="#">Uniformes</a></li>
             <li class="nav-item"><a class="nav-link" href="#">Locales</a></li>
           </ul>
@@ -112,7 +165,7 @@
       <div class="container">
         <h1 class="fw-bold">Bienvenido a UniSena</h1>
         <p>Compra y vende uniformes fácilmente</p>
-        <a href="#" class="btn btn-light mt-3">Ver productos</a>
+        <a href="#" class="btn btn-light mt-3">Informacion Programas</a>
       </div>
     </section>
 
@@ -180,5 +233,19 @@
         <p>© 2026 UniSena</p>
       </div>
     </footer>
+
+    <script>
+      const cards = document.querySelectorAll(".card-product");
+
+      setInterval(() => {
+        cards.forEach((card) => {
+          card.style.transform = "translateY(0px)";
+        });
+
+        const randomCard = cards[Math.floor(Math.random() * cards.length)];
+
+        randomCard.style.transform = "translateY(-10px)";
+      }, 1900);
+    </script>
   </body>
 </html>
