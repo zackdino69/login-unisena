@@ -4,6 +4,9 @@ from .models import Usuario,Rol
 from django.contrib.auth.hashers import check_password, make_password
 from django.core.mail import send_mail,EmailMultiAlternatives
 from django.conf import settings
+import random
+from django.utils.timezone import now
+from datetime import timedelta
 
 
 def login_view(request):
@@ -72,7 +75,6 @@ def inicio_cliente(request):
 
     return render(request, "inicio_cliente.html", {"nombre": nombre})
 
-
 def inicio_vendedor(request):
 
     if "usuario_id" not in request.session:
@@ -84,9 +86,6 @@ def inicio_vendedor(request):
     nombre = request.session.get("usuario_nombre")
 
     return render(request, "inicio.html", {"nombre": nombre})
-
-
-
 
 def logout_view(request):
     request.session.flush()
@@ -184,3 +183,141 @@ def registro_view(request):
 
     return render(request, "registro.html")
 
+def recuperar_password(request):
+    
+    if request.method == "POST":
+        correo = request.POST.get("correo")
+
+        try:
+            usuario = Usuario.objects.get(correo=correo)
+
+            # 🔢 generar código de 6 dígitos
+            codigo = str(random.randint(100000, 999999))
+
+            usuario.reset_codigo = codigo
+            usuario.reset_codigo_fecha = now()
+            usuario.save()
+
+            # 📩 correo bonito
+            mensaje_html = f"""
+            <div style="font-family: Arial; text-align:center;">
+                <h2 style="color:#125f58;">Recuperar contraseña</h2>
+                <p>Tu código es:</p>
+                <h1 style="letter-spacing:5px;">{codigo}</h1>
+                <p>No lo compartas con nadie</p>
+            </div>
+            """
+
+            email = EmailMultiAlternatives(
+                "Código de recuperación",
+                "Tu código es " + codigo,
+                settings.EMAIL_HOST_USER,
+                [correo]
+            )
+
+            email.attach_alternative(mensaje_html, "text/html")
+            email.send()
+            
+              # 🔴 AÑADIDO
+            
+            request.session["correo_reset"] = correo  # 🔴 AÑADIDO para mantener el correo en la sesión
+
+            # 🔥 redirige a donde se pone el código
+            return redirect("reset_password")
+
+        except Usuario.DoesNotExist:
+            return render(request, "recuperar.html", {"error": "Correo no registrado"})
+
+    return render(request, "recuperar.html")
+
+def reset_password(request):
+
+    correo = request.session.get("correo_reset")
+
+    if not correo:
+        return redirect("recuperar")
+
+    try:
+        usuario = Usuario.objects.get(correo=correo)
+    except Usuario.DoesNotExist:
+        return redirect("recuperar")
+
+    if request.method == "POST":
+
+        accion = request.POST.get("accion")
+
+        # 🔁 REENVIAR CÓDIGO
+        if accion == "reenviar":
+            import random
+            from django.utils.timezone import now
+
+            codigo = str(random.randint(100000, 999999))
+
+            usuario.reset_codigo = codigo
+            usuario.reset_codigo_fecha = now()
+            usuario.reset_intentos = 0
+            usuario.save()
+
+            from django.core.mail import EmailMultiAlternatives
+            from django.conf import settings
+
+            mensaje_html = f"""
+            <div style="text-align:center;">
+                <h2>Nuevo código</h2>
+                <h1>{codigo}</h1>
+            </div>
+            """
+
+            email = EmailMultiAlternatives(
+                "Nuevo código",
+                "Tu código es " + codigo,
+                settings.EMAIL_HOST_USER,
+                [correo]
+            )
+
+            email.attach_alternative(mensaje_html, "text/html")
+            email.send()
+
+            return render(request, "reset.html", {
+                "success": "Se envió un nuevo código"
+            })
+
+        # 🔐 CAMBIAR CONTRASEÑA
+        elif accion == "cambiar":
+
+            codigo = request.POST.get("codigo")
+            password = request.POST.get("password")
+
+            from django.utils.timezone import now
+            from datetime import timedelta
+            from django.contrib.auth.hashers import make_password
+
+            if not usuario.reset_codigo_fecha:
+                return render(request, "reset.html", {"error": "Solicita un código primero"})
+
+            if now() > usuario.reset_codigo_fecha + timedelta(minutes=5):
+                return render(request, "reset.html", {"error": "Código expirado"})
+
+            if usuario.reset_intentos >= 3:
+                return render(request, "reset.html", {"error": "Demasiados intentos"})
+
+            if usuario.reset_codigo != codigo:
+                usuario.reset_intentos += 1
+                usuario.save()
+
+                return render(request, "reset.html", {
+                    "error": f"Código incorrecto ({usuario.reset_intentos}/3)"
+                })
+
+            # ✅ contraseña correcta
+            usuario.password = make_password(password)
+            usuario.reset_codigo = None
+            usuario.reset_codigo_fecha = None
+            usuario.reset_intentos = 0
+            usuario.save()
+
+            del request.session["correo_reset"]
+
+            return redirect("login")
+
+    return render(request, "reset.html")

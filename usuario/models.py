@@ -33,6 +33,9 @@ class Usuario(models.Model):
     )    
     num_identificacion = models.CharField(max_length=20, unique=True)    
     password = models.CharField(max_length=255)
+    reset_codigo = models.CharField(max_length=6, null=True, blank=True)
+    reset_codigo_fecha = models.DateTimeField(null=True, blank=True)
+    reset_intentos = models.IntegerField(default=0)
     
     def save(self, *args, **kwargs):
 
